@@ -1,0 +1,67 @@
+# Visual Studio 2022 specific files
+.vs/                  # Solution user-specific files (e.g., .suo, .user)
+*.vspscc
+*.vssscc
+*.suo
+*.user
+*.bak
+*.log
+
+# Visual Studio Code
+.vscode/
+.history/
+
+# JetBrains Rider & other JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+build/
+.gradle/
+.project/
+.settings/
+.classpath
+
+# .NET Common Exclusions
+## Ignore built artifacts
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Aa]rm64/
+[Aa]rm/
+[Xx]64/
+[Xx]86/
+[Aa]ny[Cc]pu/
+[Nn]et[Cc]ore[Aa]pp/
+[Nn]et[Ff]ramework/
+[Tt]emp/
+**/*.tmp
+**/*.obj
+**/*.pdb
+**/*.dll.config
+**/*.resharper
+**/*.dotsettings
+**/*.csproj.user
+**/*.dbmdl
+
+## Ignore NuGet packages
+packages/
+*.nupkg
+
+## Ignore test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Ignore build scripts and directories from CI/CD
+*.bat
+*.cmd
+*.ps1
+Publish/
+
+## Misc operating system files
+Thumbs.db
+Desktop.ini
