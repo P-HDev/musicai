@@ -7,7 +7,7 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <RootNamespace>musicai</RootNamespace>
       <UserSecretsId>fee79316-eb28-432b-857c-cdae2c919f37</UserSecretsId>
-      <LangVersion>14</LangVersion>
+      <LangVersion>latestmajor</LangVersion>
   </PropertyGroup>
 
     <ItemGroup>
