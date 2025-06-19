@@ -11,17 +11,26 @@ public static class RegistroDeServicos
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.ConfigureSwagger();
 
-        // Configurar HttpClient para ignorar erros de certificado em desenvolvimento
         if (builder.Environment.IsDevelopment())
         {
+            builder.Configuration.AddUserSecrets<Program>();
+
             builder.Services.AddHttpClient("HttpsClient")
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
                     ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
                 });
+            
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.ConfigureHttpsDefaults(httpsOptions =>
+                {
+                    httpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | 
+                                                System.Security.Authentication.SslProtocols.Tls13;
+                });
+            });
         }
 
-        // Configurar redirecionamento HTTPS
         builder.Services.ConfigureHttpsRedirection(builder.Environment);
 
         builder.Services.AddScoped<OpenIA>();
@@ -41,11 +50,10 @@ public static class RegistroDeServicos
                 Contact = new Microsoft.OpenApi.Models.OpenApiContact
                 {
                     Name = "Suporte MusicAI",
-                    Email = "pnajuliapixaoSANTOS@hotmail.com"
+                    Email = "anajuliapixaoSANTOS@hotmail.com"
                 }
             });
             
-            // Garantir que o Swagger funcione corretamente em ambiente de desenvolvimento
             c.CustomSchemaIds(type => type.FullName);
         });
 
@@ -59,7 +67,7 @@ public static class RegistroDeServicos
             services.AddHttpsRedirection(options =>
             {
                 options.RedirectStatusCode = (int)HttpStatusCode.TemporaryRedirect;
-                options.HttpsPort = 7185; // De acordo com launchSettings.json
+                options.HttpsPort = 7185;
             });
         }
         else
