@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Infra</RootNamespace>
+        <LangVersion>14</LangVersion>
     </PropertyGroup>
 
 </Project>

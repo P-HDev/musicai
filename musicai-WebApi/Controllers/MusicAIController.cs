@@ -1,16 +1,24 @@
+using Dominio.Entidades;
 using Microsoft.AspNetCore.Mvc;
+using Servico.Servicos;
 
 namespace musicai.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class MusicAIController : ControllerBase
+public class MusicAIController(OpenIA openIAService) : ControllerBase
 {
-  
+    private readonly OpenIA _openIAService = openIAService;
 
-    [HttpGet(Name = "OPEN-IA")]
-    public string  Get()
+    [HttpPost("enviar-mensagem")]
+    public async Task<IActionResult> ProcessarMensagem([FromBody] MensagemRequest request)
     {
-        return "Hello, this is the OpenAI API!";            
+        if (string.IsNullOrEmpty(request.Mensagem))
+        {
+            return BadRequest("A mensagem não pode estar vazia");
+        }
+
+        string resposta = await _openIAService.ProcessarMensagemAsync(request.Mensagem);
+        return Ok(new { resposta });
     }
 }
