@@ -1,5 +1,6 @@
 using Dominio.Entidades;
 using Microsoft.AspNetCore.Mvc;
+using Servico;
 using Servico.Servicos;
 
 namespace musicai.Controllers;

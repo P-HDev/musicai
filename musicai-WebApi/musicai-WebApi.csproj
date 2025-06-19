@@ -28,4 +28,8 @@
       <ProjectReference Include="..\Servico\Servico.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Servico\Servico.csproj" />
+    </ItemGroup>
+
 </Project>

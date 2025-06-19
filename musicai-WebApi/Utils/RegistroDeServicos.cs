@@ -1,3 +1,4 @@
+using Servico;
 using Servico.Servicos;
 using System.Net;
 
@@ -34,7 +35,8 @@ public static class RegistroDeServicos
         builder.Services.ConfigureHttpsRedirection(builder.Environment);
 
         builder.Services.AddScoped<OpenIA>();
-
+        builder.Services.AddScoped<SpotifyAuthService>();
+        builder.Services.AddScoped<SpotifyPlaylistService>();
         return builder;
     }
 
