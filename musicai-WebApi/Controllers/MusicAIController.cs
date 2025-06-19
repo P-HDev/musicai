@@ -18,7 +18,7 @@ public class MusicAIController(OpenIA openIAService) : ControllerBase
             return BadRequest("A mensagem não pode estar vazia");
         }
 
-        string resposta = await _openIAService.ProcessarMensagemAsync(request.Mensagem);
+        var resposta = await _openIAService.GerarPlaylist(request.Mensagem);
         return Ok(new { resposta });
     }
 }
