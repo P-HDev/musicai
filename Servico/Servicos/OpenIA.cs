@@ -9,7 +9,7 @@ public class OpenIA(IConfiguration configuration)
         configuration["OpenAISettings:ApiKey"]);
 
     private readonly string _model =
-        configuration["OpenAISettings:Model"] ?? "gpt-4.1-mini";
+        configuration["OpenAISettings:Model"];
 
     public async Task<List<string>> GerarPlaylist(string mensagemUsuario)
     {
