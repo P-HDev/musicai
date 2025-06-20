@@ -1,3 +1,4 @@
+using Dominio.Interfaces;
 using Servico.Servicos;
 using System.Net;
 
@@ -14,12 +15,6 @@ public static class RegistroDeServicos
         if (builder.Environment.IsDevelopment())
         {
             builder.Configuration.AddUserSecrets<Program>();
-
-            builder.Services.AddHttpClient("HttpsClient")
-                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
-                });
             
             builder.WebHost.ConfigureKestrel(options =>
             {
@@ -33,7 +28,10 @@ public static class RegistroDeServicos
 
         builder.Services.ConfigureHttpsRedirection(builder.Environment);
 
-        builder.Services.AddScoped<OpenIA>();
+        // Registros dos serviços
+        builder.Services.AddScoped<IOpenIAServico, OpenIAServico>();
+        builder.Services.AddScoped<ISpotifyServico, SpotifyServico>();
+        builder.Services.AddScoped<IPlaylistServico, PlaylistServico>();
 
         return builder;
     }
@@ -46,15 +44,8 @@ public static class RegistroDeServicos
             {
                 Title = "MusicAI API",
                 Version = "v1",
-                Description = "API para montar sua playlist de músicas com base em mensagens de texto.",
-                Contact = new Microsoft.OpenApi.Models.OpenApiContact
-                {
-                    Name = "Suporte MusicAI",
-                    Email = "anajuliapixaoSANTOS@hotmail.com"
-                }
+                Description = "API para montar sua playlist de músicas com base em mensagens de texto."
             });
-            
-            c.CustomSchemaIds(type => type.FullName);
         });
 
         return services;
