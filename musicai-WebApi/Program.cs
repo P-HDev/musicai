@@ -4,17 +4,37 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(opcoes =>
 {
-    opcoes.AddPolicy("PermitirTudo", politica =>
+    opcoes.AddPolicy("PermitirSpotify", politica =>
     {
-        politica.AllowAnyOrigin()
+        politica.WithOrigins(
+                "https://accounts.spotify.com",
+                "https://api.spotify.com",
+                "http://localhost:3000",
+                "http://localhost:5102",
+                "http://127.0.0.1:5102")
                .AllowAnyHeader()
-               .AllowAnyMethod();
+               .AllowAnyMethod()
+               .SetIsOriginAllowed(_ => true)
+               .AllowCredentials();
     });
+    
+    if (builder.Environment.IsDevelopment())
+    {
+        opcoes.AddPolicy("PermitirTudo", politica =>
+        {
+            politica.AllowAnyOrigin()
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+    }
 });
 
 builder.ConfigurarServicos();
 
 var app = builder.Build();
+
+// Aplica CORS antes de qualquer outro middleware
+app.UseCors(app.Environment.IsDevelopment() ? "PermitirTudo" : "PermitirSpotify");
 
 if (app.Environment.IsDevelopment())
 {
@@ -25,8 +45,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseCors("PermitirTudo");
-app.UseHttpsRedirection();
+// Removida a linha de redirecionamento HTTPS
 app.MapControllers();
 
 app.Run();

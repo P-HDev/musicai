@@ -9,10 +9,19 @@ public class SpotifyServico : ISpotifyServico
 {
     private readonly string _clientId;
     private readonly string _clientSecret;
+    private readonly string _redirectUri;
     private ISpotifyClient? _spotifyClient;
     private string? _tokenAtual;
     private DateTime _dataExpiracao = DateTime.MinValue;
     private readonly object _bloqueioToken = new();
+    private static readonly string[] _escopos = { 
+        "user-read-private", 
+        "user-read-email", 
+        "playlist-modify-public", 
+        "playlist-modify-private",
+        "playlist-read-private",
+        "playlist-read-collaborative"
+    };
 
     public SpotifyServico(IConfiguration configuracao)
     {
@@ -20,6 +29,8 @@ public class SpotifyServico : ISpotifyServico
                 throw new ArgumentNullException(nameof(configuracao), "ClientId não configurado");
         _clientSecret = configuracao["SpotifyConfiguracao:ClientSecret"] ?? 
                     throw new ArgumentNullException(nameof(configuracao), "ClientSecret não configurado");
+        _redirectUri = configuracao["SpotifyConfiguracao:RedirectUri"] ?? 
+                    throw new ArgumentNullException(nameof(configuracao), "RedirectUri não configurado");
         
         InicializarTokenSincrono();
     }
@@ -27,6 +38,114 @@ public class SpotifyServico : ISpotifyServico
     public SpotifyServico() : this(null!)
     {
         // Construtor sem parâmetros para compatibilidade com DI se necessário
+    }
+
+    public string ObterUrlAutorizacao()
+    {
+        var loginRequest = new LoginRequest(
+            new Uri(_redirectUri),
+            _clientId,
+            LoginRequest.ResponseType.Code)
+        {
+            Scope = _escopos
+        };
+
+        return loginRequest.ToUri().ToString();
+    }
+
+    public async Task<AutenticacaoSpotify> ObterTokenUsuarioAsync(string codigo)
+    {
+        if (string.IsNullOrEmpty(codigo))
+            throw new ArgumentException("Código de autorização não pode ser vazio", nameof(codigo));
+
+        try
+        {
+            var response = await new OAuthClient().RequestToken(
+                new AuthorizationCodeTokenRequest(
+                    _clientId,
+                    _clientSecret,
+                    codigo,
+                    new Uri(_redirectUri)
+                )
+            );
+
+            return new AutenticacaoSpotify
+            {
+                AccessToken = response.AccessToken,
+                RefreshToken = response.RefreshToken,
+                TokenType = response.TokenType,
+                ExpiresIn = response.ExpiresIn,
+                DataExpiracao = DateTime.UtcNow.AddSeconds(response.ExpiresIn),
+                Scope = response.Scope
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Erro ao obter token de acesso do usuário", ex);
+        }
+    }
+
+    public async Task<AutenticacaoSpotify> AtualizarTokenUsuarioAsync(string refreshToken)
+    {
+        if (string.IsNullOrEmpty(refreshToken))
+            throw new ArgumentException("Token de atualização não pode ser vazio", nameof(refreshToken));
+
+        try
+        {
+            var response = await new OAuthClient().RequestToken(
+                new AuthorizationCodeRefreshRequest(_clientId, _clientSecret, refreshToken)
+            );
+
+            return new AutenticacaoSpotify
+            {
+                AccessToken = response.AccessToken,
+                RefreshToken = response.RefreshToken ?? refreshToken, // Mantém o refresh token anterior se não for fornecido
+                TokenType = response.TokenType,
+                ExpiresIn = response.ExpiresIn,
+                DataExpiracao = DateTime.UtcNow.AddSeconds(response.ExpiresIn),
+                Scope = response.Scope
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Erro ao atualizar token de acesso do usuário", ex);
+        }
+    }
+
+    public async Task<bool> CriarPlaylistUsuarioAsync(string nomePlaylist, string descricao, List<string> trackIds, string accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
+            throw new ArgumentException("Token de acesso não pode ser vazio", nameof(accessToken));
+
+        if (string.IsNullOrEmpty(nomePlaylist))
+            throw new ArgumentException("Nome da playlist não pode ser vazio", nameof(nomePlaylist));
+
+        if (trackIds == null || !trackIds.Any())
+            throw new ArgumentException("A lista de músicas não pode estar vazia", nameof(trackIds));
+
+        try
+        {
+            var spotifyClient = new SpotifyClient(accessToken);
+            var usuarioAtual = await spotifyClient.UserProfile.Current();
+
+            var playlistCriada = await spotifyClient.Playlists.Create(usuarioAtual.Id, new PlaylistCreateRequest(nomePlaylist)
+            {
+                Description = descricao,
+                Public = false
+            });
+
+            // Convertendo os IDs das faixas em URIs no formato esperado pelo Spotify (formato string)
+            var urisComoStrings = trackIds.Select(id => $"spotify:track:{id}").ToList();
+            
+            await spotifyClient.Playlists.AddItems(playlistCriada.Id, new PlaylistAddItemsRequest(urisComoStrings));
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao criar playlist: {ex.Message}");
+            return false;
+        }
     }
 
     private void InicializarTokenSincrono()
@@ -147,5 +266,10 @@ public class SpotifyServico : ISpotifyServico
             Console.WriteLine($"Erro ao obter token client credentials: {ex.Message}");
             throw;
         }
+    }
+
+    public string ObterClientId()
+    {
+        return _clientId;
     }
 }
