@@ -13,4 +13,7 @@ public interface ISpotifyServico
     Task<AutenticacaoSpotify> AtualizarTokenUsuarioAsync(string refreshToken);
     Task<bool> CriarPlaylistUsuarioAsync(string nomePlaylist, string descricao, List<string> trackIds, string accessToken);
     string ObterClientId();
+    
+    // Método para obter playlists do usuário
+    Task<IEnumerable<PlaylistSpotify>> ObterPlaylistsUsuarioAsync(string accessToken);
 }

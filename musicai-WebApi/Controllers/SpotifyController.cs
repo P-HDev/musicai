@@ -95,6 +95,26 @@ public class SpotifyController : ControllerBase
         }
     }
 
+    [HttpGet("playlists")]
+    public async Task<IActionResult> ObterPlaylists([FromHeader(Name = "Authorization")] string autorizacao)
+    {
+        if (string.IsNullOrEmpty(autorizacao) || !autorizacao.StartsWith("Bearer "))
+        {
+            return BadRequest("Token de acesso não fornecido ou em formato inválido");
+        }
+
+        try
+        {
+            string accessToken = autorizacao.Substring("Bearer ".Length);
+            var playlists = await _spotifyServico.ObterPlaylistsUsuarioAsync(accessToken);
+            return Ok(playlists);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Erro ao obter playlists: {ex.Message}");
+        }
+    }
+
     public class GerarESalvarRequest
     {
         public string Mensagem { get; set; } = string.Empty;

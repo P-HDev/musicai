@@ -10,11 +10,13 @@ public class AutenticacaoSpotifyController : ControllerBase
 {
     private readonly ISpotifyServico _spotifyServico;
     private readonly ILogger<AutenticacaoSpotifyController> _logger;
+    private readonly string _frontendUrl;
 
-    public AutenticacaoSpotifyController(ISpotifyServico spotifyServico, ILogger<AutenticacaoSpotifyController> logger)
+    public AutenticacaoSpotifyController(ISpotifyServico spotifyServico, ILogger<AutenticacaoSpotifyController> logger, IConfiguration configuration)
     {
         _spotifyServico = spotifyServico;
         _logger = logger;
+        _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:5173";
     }
 
     [HttpGet("autorizar")]
@@ -58,13 +60,13 @@ public class AutenticacaoSpotifyController : ControllerBase
         if (!string.IsNullOrEmpty(error))
         {
             _logger.LogError("Erro durante autorização do Spotify: {Error}", error);
-            return BadRequest($"Erro durante a autorização do Spotify: {error}");
+            return Redirect($"{_frontendUrl}/callback?erro={Uri.EscapeDataString(error)}");
         }
 
         if (string.IsNullOrEmpty(code))
         {
             _logger.LogError("Código de autorização não fornecido");
-            return BadRequest("Código de autorização não fornecido");
+            return Redirect($"{_frontendUrl}/callback?erro=codigo-nao-fornecido");
         }
 
         try
@@ -72,74 +74,16 @@ public class AutenticacaoSpotifyController : ControllerBase
             _logger.LogInformation("Obtendo token com o código fornecido");
             var autenticacao = await _spotifyServico.ObterTokenUsuarioAsync(code);
             
-            // Criando uma página HTML simples para mostrar o sucesso e os tokens
-            var htmlResponse = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <title>Autenticação Spotify - Sucesso</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .container {{ max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }}
-        .success {{ color: green; }}
-        .token-info {{ background-color: #f5f5f5; padding: 10px; border-radius: 5px; word-wrap: break-word; }}
-        code {{ font-family: monospace; }}
-    </style>
-</head>
-<body>
-    <div class=""container"">
-        <h1 class=""success"">Autenticação concluída com sucesso!</h1>
-        <p>A sua conta Spotify foi conectada com sucesso ao MusicAI.</p>
-        <h3>Informações do token (guarde em local seguro):</h3>
-        <div class=""token-info"">
-            <p><strong>Access Token:</strong> <code>{autenticacao.AccessToken[..15]}...</code></p>
-            <p><strong>Refresh Token:</strong> <code>{autenticacao.RefreshToken[..15]}...</code></p>
-            <p><strong>Expira em:</strong> {autenticacao.ExpiresIn} segundos</p>
-        </div>
-        <p>Você pode fechar esta janela e retornar ao aplicativo.</p>
-    </div>
-</body>
-</html>";
-
-            _logger.LogInformation("Autenticação bem-sucedida, retornando página HTML de sucesso");
-            Response.Headers.Append("Cache-Control", "no-store");
-            Response.Headers.Append("Pragma", "no-cache");
-            return Content(htmlResponse, "text/html; charset=utf-8");
+            // Redireciona para o frontend com os tokens
+            return Redirect($"{_frontendUrl}/callback" +
+                $"?access_token={Uri.EscapeDataString(autenticacao.AccessToken)}" +
+                $"&refresh_token={Uri.EscapeDataString(autenticacao.RefreshToken)}" +
+                $"&expires_in={autenticacao.ExpiresIn}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro durante autenticação: {Message}", ex.Message);
-            
-            // Retornando página HTML com o erro para melhor visualização
-            var htmlErro = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <title>Autenticação Spotify - Erro</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .container {{ max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }}
-        .error {{ color: red; }}
-        .details {{ background-color: #f5f5f5; padding: 10px; border-radius: 5px; }}
-    </style>
-</head>
-<body>
-    <div class=""container"">
-        <h1 class=""error"">Erro na autenticação</h1>
-        <p>Ocorreu um erro durante o processo de autenticação com o Spotify:</p>
-        <div class=""details"">
-            <p><strong>Mensagem:</strong> {ex.Message}</p>
-        </div>
-        <p>Por favor, tente novamente ou contate o suporte.</p>
-    </div>
-</body>
-</html>";
-
-            Response.Headers.Append("Cache-Control", "no-store");
-            Response.Headers.Append("Pragma", "no-cache");
-            return Content(htmlErro, "text/html; charset=utf-8");
+            _logger.LogError(ex, "Erro ao processar callback de autenticação: {Mensagem}", ex.Message);
+            return Redirect($"{_frontendUrl}/callback?erro={Uri.EscapeDataString(ex.Message)}");
         }
     }
 

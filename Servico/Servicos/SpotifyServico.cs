@@ -148,6 +148,50 @@ public class SpotifyServico : ISpotifyServico
         }
     }
 
+    public async Task<IEnumerable<PlaylistSpotify>> ObterPlaylistsUsuarioAsync(string accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
+            throw new ArgumentNullException(nameof(accessToken), "Token de acesso não pode ser nulo ou vazio");
+
+        try
+        {
+            var clientConfig = SpotifyClientConfig.CreateDefault().WithToken(accessToken);
+            var spotifyClient = new SpotifyClient(clientConfig);
+            
+            var playlistsResponse = await spotifyClient.Playlists.CurrentUsers();
+            var playlists = new List<PlaylistSpotify>();
+            
+            foreach (var item in playlistsResponse.Items)
+            {
+                var playlist = new PlaylistSpotify
+                {
+                    Id = item.Id,
+                    Nome = item.Name,
+                    Descricao = item.Description ?? string.Empty,
+                    TotalFaixas = Convert.ToInt32(item.Tracks.Total),
+                    Publica = item.Public ?? false,
+                    Colaborativa = Convert.ToBoolean(item.Collaborative),
+                    UrlExterna = item.ExternalUrls.ContainsKey("spotify") 
+                        ? item.ExternalUrls["spotify"] 
+                        : string.Empty
+                };
+                
+                if (item.Images != null && item.Images.Count > 0)
+                {
+                    playlist.ImagemUrl = item.Images[0].Url;
+                }
+                
+                playlists.Add(playlist);
+            }
+            
+            return playlists;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Erro ao obter playlists do usuário: {ex.Message}", ex);
+        }
+    }
+
     private void InicializarTokenSincrono()
     {
         InicializarToken().GetAwaiter().GetResult();
