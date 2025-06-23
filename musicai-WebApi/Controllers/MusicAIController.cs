@@ -6,9 +6,9 @@ namespace musicai.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class MusicAIController(OpenIA openIAService) : ControllerBase
+public class MusicAIController(OpenIAServico openIAService) : ControllerBase
 {
-    private readonly OpenIA _openIAService = openIAService;
+    private readonly OpenIAServico _openIAService = openIAService;
 
     [HttpPost("enviar-mensagem")]
     public async Task<IActionResult> ProcessarMensagem([FromBody] MensagemRequest request)
