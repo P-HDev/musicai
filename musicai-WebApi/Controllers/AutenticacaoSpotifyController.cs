@@ -164,6 +164,28 @@ public class AutenticacaoSpotifyController : ControllerBase
         }
     }
 
+    [HttpPost("logout")]
+    public IActionResult RealizarLogout()
+    {
+        try
+        {
+            _logger.LogInformation("Realizando logout do usuário");
+            
+            // Definindo cabeçalhos para evitar cache
+            Response.Headers.Append("Cache-Control", "no-store, no-cache, must-revalidate");
+            Response.Headers.Append("Pragma", "no-cache");
+            
+            // Como o Spotify não oferece um endpoint específico para logout via API,
+            // retornamos uma resposta de sucesso para o frontend, que deverá limpar os tokens armazenados
+            return Ok(new { Mensagem = "Logout realizado com sucesso" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao realizar logout: {Mensagem}", ex.Message);
+            return StatusCode(500, "Erro ao realizar logout. Verifique os logs para mais detalhes.");
+        }
+    }
+
     public class AtualizarTokenRequest
     {
         public string RefreshToken { get; set; } = string.Empty;

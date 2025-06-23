@@ -127,24 +127,48 @@ public class SpotifyServico : ISpotifyServico
         {
             var spotifyClient = new SpotifyClient(accessToken);
             var usuarioAtual = await spotifyClient.UserProfile.Current();
-
+            
+            Console.WriteLine($"Criando playlist para o usuário: {usuarioAtual.Id}");
+            
             var playlistCriada = await spotifyClient.Playlists.Create(usuarioAtual.Id, new PlaylistCreateRequest(nomePlaylist)
             {
                 Description = descricao,
                 Public = false
             });
-
-            // Convertendo os IDs das faixas em URIs no formato esperado pelo Spotify (formato string)
-            var urisComoStrings = trackIds.Select(id => $"spotify:track:{id}").ToList();
             
-            await spotifyClient.Playlists.AddItems(playlistCriada.Id, new PlaylistAddItemsRequest(urisComoStrings));
+            Console.WriteLine($"Playlist criada com ID: {playlistCriada.Id}");
+
+            // Removendo possíveis IDs duplicados e inválidos
+            var trackIdsUnicos = trackIds.Distinct().Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
+            Console.WriteLine($"Adicionando {trackIdsUnicos.Count} faixas únicas à playlist");
+            
+            // Convertendo os IDs das faixas em URIs no formato esperado pelo Spotify
+            var urisComoStrings = trackIdsUnicos.Select(id => $"spotify:track:{id}").ToList();
+            
+            // Adicionando faixas em lotes para evitar exceder limites da API
+            const int tamanhoBatch = 50;
+            for (int i = 0; i < urisComoStrings.Count; i += tamanhoBatch)
+            {
+                var batch = urisComoStrings.Skip(i).Take(tamanhoBatch).ToList();
+                await spotifyClient.Playlists.AddItems(playlistCriada.Id, new PlaylistAddItemsRequest(batch));
+                Console.WriteLine($"Adicionado lote de {batch.Count} faixas");
+            }
             
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao criar playlist: {ex.Message}");
-            return false;
+            // Capturando detalhes mais específicos da exceção
+            Console.WriteLine($"Erro ao criar playlist: {ex.GetType().Name}: {ex.Message}");
+            
+            if (ex.InnerException != null)
+                Console.WriteLine($"Exceção interna: {ex.InnerException.Message}");
+                
+            // Se for uma exceção da API do Spotify, pode ter mais detalhes
+            if (ex is APIException apiEx)
+                Console.WriteLine($"Erro da API Spotify: Status: {apiEx.Response?.StatusCode}, Body: {apiEx.Response?.Body}");
+                
+            throw new InvalidOperationException($"Falha ao criar playlist no Spotify: {ex.Message}", ex);
         }
     }
 
