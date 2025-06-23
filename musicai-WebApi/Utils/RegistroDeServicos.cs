@@ -2,6 +2,7 @@ using Servico.Servicos;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
 using musicai.Data;
+using Dominio.Interfaces;
 
 namespace musicai.Utils;
 
@@ -16,6 +17,11 @@ public static class RegistroDeServicos
         // Configuração do contexto do banco de dados PostgreSQL
         builder.Services.AddDbContext<MusicAIDbContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+        // Registro dos serviços da aplicação
+        builder.Services.AddScoped<ISpotifyServico, SpotifyServico>();
+        builder.Services.AddScoped<IPlaylistServico, PlaylistServico>();
+        builder.Services.AddScoped<IOpenIAServico, OpenIAServico>();
 
         if (builder.Environment.IsDevelopment())
         {
