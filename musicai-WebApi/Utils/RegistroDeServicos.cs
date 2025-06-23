@@ -1,5 +1,7 @@
 using Servico.Servicos;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using musicai.Data;
 
 namespace musicai.Utils;
 
@@ -10,6 +12,10 @@ public static class RegistroDeServicos
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.ConfigureSwagger();
+
+        // Configuração do contexto do banco de dados PostgreSQL
+        builder.Services.AddDbContext<MusicAIDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
         if (builder.Environment.IsDevelopment())
         {
@@ -32,10 +38,7 @@ public static class RegistroDeServicos
         }
 
         builder.Services.ConfigureHttpsRedirection(builder.Environment);
-
-        builder.Services.AddScoped<OpenIA>();
-        builder.Services.AddScoped<SpotifyAuthService>();
-        builder.Services.AddScoped<SpotifyPlaylistService>();
+        
         return builder;
     }
 
